@@ -79,3 +79,57 @@ BOOST_AUTO_TEST_CASE(test_encode_decode_double)
   mpack_decoder_term(&decoder);
   mpack_encoder_term(&encoder);
 }
+
+BOOST_AUTO_TEST_CASE(test_convert_integer_to_float)
+{
+  char buffer[32] = { 0 };
+  float value;
+
+  mpack_encoder_t encoder;
+  mpack_encoder_init(&encoder, buffer, sizeof(buffer));
+
+  BOOST_CHECK(mpack_encode_signed(&encoder, -42) == 2);
+  BOOST_CHECK(mpack_encode_unsigned(&encoder, 42) == 1);
+
+  mpack_decoder_t decoder;
+  mpack_decoder_init(&decoder, buffer, 3);
+
+  BOOST_CHECK(mpack_decode_float(&decoder, &value) == 2);
+  BOOST_CHECK(value == -42.0f);
+
+  BOOST_CHECK(mpack_decode_float(&decoder, &value) == 1);
+  BOOST_CHECK(value == 42.0f);
+  
+  BOOST_CHECK(mpack_decode_float(&decoder, &value) == -1);
+  BOOST_CHECK(errno == EAGAIN);
+
+  mpack_decoder_term(&decoder);
+  mpack_encoder_term(&encoder);
+}
+
+BOOST_AUTO_TEST_CASE(test_convert_integer_to_double)
+{
+  char buffer[32] = { 0 };
+  double value;
+
+  mpack_encoder_t encoder;
+  mpack_encoder_init(&encoder, buffer, sizeof(buffer));
+
+  BOOST_CHECK(mpack_encode_signed(&encoder, -42) == 2);
+  BOOST_CHECK(mpack_encode_unsigned(&encoder, 42) == 1);
+
+  mpack_decoder_t decoder;
+  mpack_decoder_init(&decoder, buffer, 3);
+
+  BOOST_CHECK(mpack_decode_double(&decoder, &value) == 2);
+  BOOST_CHECK(value == -42.0f);
+
+  BOOST_CHECK(mpack_decode_double(&decoder, &value) == 1);
+  BOOST_CHECK(value == 42.0f);
+  
+  BOOST_CHECK(mpack_decode_double(&decoder, &value) == -1);
+  BOOST_CHECK(errno == EAGAIN);
+
+  mpack_decoder_term(&decoder);
+  mpack_encoder_term(&encoder);
+}

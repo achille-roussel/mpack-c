@@ -422,8 +422,28 @@ int mpack_decode_unsigned(mpack_decoder_t *decoder, unsigned long *value)
 
 int mpack_decode_float(mpack_decoder_t *decoder, float *value)
 {
+  union { long s; unsigned long u; } conv;
   union { uint32_t u; float f; } var;
+  int size;
+  
   MPACK_DECODE_BEGIN(decoder);
+
+  if ((size = mpack_decode_unsigned(decoder, &conv.u)) > 0) {
+    if (conv.u > 8388608) {
+      MPACK_DECODE_FAIL(ERANGE);
+    }
+    *value = conv.u;
+    return size;
+  }
+
+  if ((size = mpack_decode_signed(decoder, &conv.s)) > 0) {
+    if ((conv.s > 8388608) || (conv.s < -8388608)) {
+      MPACK_DECODE_FAIL(ERANGE);
+    }
+    *value = conv.s;
+    return size;
+  }
+
   MPACK_DECODE_ASSERT(mpack_decode_tag_equal(decoder, MPACK_FLOAT32));
   MPACK_DECODE_CHECK(mpack_decoder_read_uint32(decoder, &var.u));
   *value = var.f;
@@ -432,8 +452,28 @@ int mpack_decode_float(mpack_decoder_t *decoder, float *value)
 
 int mpack_decode_double(mpack_decoder_t *decoder, double *value)
 {
+  union { long s; unsigned long u; } conv;
   union { uint64_t u; double f; } var;
+  int size;
+  
   MPACK_DECODE_BEGIN(decoder);
+
+  if ((size = mpack_decode_unsigned(decoder, &conv.u)) > 0) {
+    if (conv.u > 9007199254740992) {
+      MPACK_DECODE_FAIL(ERANGE);
+    }
+    *value = conv.u;
+    return size;
+  }
+
+  if ((size = mpack_decode_signed(decoder, &conv.s)) > 0) {
+    if ((conv.s > 9007199254740992) || (conv.s < -9007199254740992)) {
+      MPACK_DECODE_FAIL(ERANGE);
+    }
+    *value = conv.s;
+    return size;
+  }
+  
   MPACK_DECODE_ASSERT(mpack_decode_tag_equal(decoder, MPACK_FLOAT64));
   MPACK_DECODE_CHECK(mpack_decoder_read_uint64(decoder, &var.u));
   *value = var.f;
