@@ -1,0 +1,47 @@
+#!/usr/bin/env python
+# encoding: utf-8
+from copy import deepcopy
+from waflib.Tools import waf_unit_test
+
+APPNAME = 'mpack-c++'
+VERSION = '1.0'
+
+def build(waf):
+    cxxflags  = ['-W', '-Wall', '-Wextra', '-fPIC', '-std=c++1y']
+    defines   = [ ]
+    includes  = [waf.path.abspath()]
+
+    if waf.options.debug:
+        cxxflags += ['-g3']
+    else:
+        cxxflags += ['-O3']
+        defines  += ['NDEBUG=1']
+
+    default_conf = {
+        'includes' : includes,
+        'defines'  : defines,
+        'cxxflags' : cxxflags,
+    }
+
+    for f in waf.path.ant_glob('*.cpp'):
+        source = [str(f), 'mpack.c']
+        target = str(f)[:-4]
+        conf   = deepcopy(default_conf)
+        conf.update({
+            'target'  : target,
+            'source'  : source,
+            'features': ['cxx', 'cxxprogram', 'test'],
+            'defines' : ['BOOST_TEST_MAIN=1', 'BOOST_TEST_DYN_LINK=1', 'BOOST_TEST_MODULE=' + target] + conf['defines'],
+            'lib'     : 'boost_unit_test_framework',
+            'install_path': None,
+        })
+        waf(**conf)
+
+    waf.add_post_fun(waf_unit_test.summary)
+
+def configure(waf):
+    waf.load('compiler_c compiler_cxx waf_unit_test')
+
+def options(waf):
+    waf.load('compiler_c compiler_cxx waf_unit_test')
+    waf.add_option('--debug', action='store_true', help='build debug mode')
