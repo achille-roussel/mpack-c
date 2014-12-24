@@ -133,3 +133,30 @@ BOOST_AUTO_TEST_CASE(test_convert_integer_to_double)
   mpack_decoder_term(&decoder);
   mpack_encoder_term(&encoder);
 }
+
+BOOST_AUTO_TEST_CASE(test_convert_float_to_double)
+{
+  char buffer[32] = { 0 };
+  double value;
+
+  mpack_encoder_t encoder;
+  mpack_encoder_init(&encoder, buffer, sizeof(buffer));
+
+  BOOST_CHECK(mpack_encode_float(&encoder, -42.0f) == 5);
+  BOOST_CHECK(mpack_encode_float(&encoder, 42.0f) == 5);
+
+  mpack_decoder_t decoder;
+  mpack_decoder_init(&decoder, buffer, 10);
+
+  BOOST_CHECK(mpack_decode_double(&decoder, &value) == 5);
+  BOOST_CHECK(value == -42.0);
+
+  BOOST_CHECK(mpack_decode_double(&decoder, &value) == 5);
+  BOOST_CHECK(value == 42.0);
+  
+  BOOST_CHECK(mpack_decode_double(&decoder, &value) == -1);
+  BOOST_CHECK(errno == EAGAIN);
+
+  mpack_decoder_term(&decoder);
+  mpack_encoder_term(&encoder);
+}

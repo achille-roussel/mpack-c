@@ -452,7 +452,7 @@ int mpack_decode_float(mpack_decoder_t *decoder, float *value)
 
 int mpack_decode_double(mpack_decoder_t *decoder, double *value)
 {
-  union { long s; unsigned long u; } conv;
+  union { long s; unsigned long u; float f; } conv;
   union { uint64_t u; double f; } var;
   int size;
   
@@ -471,6 +471,11 @@ int mpack_decode_double(mpack_decoder_t *decoder, double *value)
       MPACK_DECODE_FAIL(ERANGE);
     }
     *value = conv.s;
+    return size;
+  }
+
+  if ((size = mpack_decode_float(decoder, &conv.f)) > 0) {
+    *value = conv.f;
     return size;
   }
   
