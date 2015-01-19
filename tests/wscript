@@ -23,13 +23,23 @@ def build(waf):
         'cxxflags' : cxxflags,
     }
 
+    # Build C library
     lib_conf = deepcopy(default_conf)
     lib_conf.update({
-        'source': ['mpack.c', 'mpack.cpp'],
+        'source': ['mpack.c'],
         'target': 'mpack',
     })
     lib = waf.stlib(**lib_conf)
 
+    # Build C++ library
+    lib_conf = deepcopy(default_conf)
+    lib_conf.update({
+        'source': ['mpack.cpp'],
+        'target': 'mpack++',
+    })
+    lib = waf.stlib(**lib_conf)
+
+    # Build tests
     for f in waf.path.ant_glob('test_*.cpp'):
         source = [str(f)]
         target = str(f)[:-4]
@@ -40,7 +50,7 @@ def build(waf):
             'features': ['cxx', 'cxxprogram', 'test'],
             'defines' : ['BOOST_TEST_MAIN=1', 'BOOST_TEST_DYN_LINK=1', 'BOOST_TEST_MODULE=' + target] + conf['defines'],
             'lib'     : ['boost_unit_test_framework'],
-            'use'     : ['mpack'],
+            'use'     : ['mpack', 'mpack++'],
             'install_path': None,
         })
         waf(**conf)
