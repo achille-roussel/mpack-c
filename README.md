@@ -1,4 +1,4 @@
 mpack-c
 =======
 
-C implementation of MessagePack encoder and decoder.
+C/C++ implementation of MessagePack encoder and decoder.
