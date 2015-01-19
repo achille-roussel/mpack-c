@@ -22,7 +22,6 @@
  * SOFTWARE.
  */
 
-#include <errno.h>
 #include <mpack.h>
 #include <string.h>
 
@@ -36,37 +35,6 @@ typedef union mpack_anyint {
   uint32_t u32;
   uint64_t u64;
 } mpack_anyint_t;
-
-#define MPACK_DECODE_BEGIN(self)            \
-  do {                                      \
-    void *save_pos = (void *)((self)->pos)
-
-#define MPACK_DECODE_END(self)                                       \
-    return ((const char *)((self)->pos)) - ((const char *)save_pos); \
-  fail:                                                              \
-    (self)->pos = save_pos;                                          \
-    return -1;                                                       \
-  } while (0)
-
-#define MPACK_DECODE_FAIL(err) \
-  do {                         \
-    errno = (err);             \
-    goto fail;                 \
-  } while (0)
-
-#define MPACK_DECODE_CHECK(expr) \
-  do {                           \
-    if (!(expr)) {               \
-      MPACK_DECODE_FAIL(EAGAIN); \
-    }                            \
-  } while (0)
-
-#define MPACK_DECODE_ASSERT(expr) \
-  do {                            \
-    if ((expr) < 0) {             \
-      goto fail;                  \
-    }                             \
-  } while (0)
 
 #if defined(__BYTE_ORDER__) && defined(__BIG_ENDIAN__) && (__BYTE_ORDER__ == __BIG_ENDIAN__)
 static uint16_t be16(uint16_t x)

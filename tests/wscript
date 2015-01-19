@@ -3,7 +3,7 @@
 from copy import deepcopy
 from waflib.Tools import waf_unit_test
 
-APPNAME = 'mpack-c++'
+APPNAME = 'mpack-c'
 VERSION = '1.0'
 
 def build(waf):
@@ -23,8 +23,15 @@ def build(waf):
         'cxxflags' : cxxflags,
     }
 
-    for f in waf.path.ant_glob('*.cpp'):
-        source = [str(f), 'mpack.c']
+    lib_conf = deepcopy(default_conf)
+    lib_conf.update({
+        'source': ['mpack.c', 'mpack.cpp'],
+        'target': 'mpack',
+    })
+    lib = waf.stlib(**lib_conf)
+
+    for f in waf.path.ant_glob('test_*.cpp'):
+        source = [str(f)]
         target = str(f)[:-4]
         conf   = deepcopy(default_conf)
         conf.update({
@@ -32,7 +39,8 @@ def build(waf):
             'source'  : source,
             'features': ['cxx', 'cxxprogram', 'test'],
             'defines' : ['BOOST_TEST_MAIN=1', 'BOOST_TEST_DYN_LINK=1', 'BOOST_TEST_MODULE=' + target] + conf['defines'],
-            'lib'     : 'boost_unit_test_framework',
+            'lib'     : ['boost_unit_test_framework'],
+            'use'     : ['mpack'],
             'install_path': None,
         })
         waf(**conf)

@@ -26,15 +26,54 @@
 #define MPACK_H
 
 #ifdef __cplusplus
+# include <cerrno>
 # include <cstdbool>
 # include <cstddef>
 # include <cstdint>
+
+#define MPACK_DECODE_BEGIN(self)            \
+  do {                                      \
+    const auto save_pos = (self)->pos
+
 extern "C" {
 #else
+# include <errno.h>
 # include <stdbool.h>
 # include <stddef.h>
 # include <stdint.h>
+
+#define MPACK_DECODE_BEGIN(self)            \
+  do {                                      \
+    void *save_pos = (void *)((self)->pos)
+
 #endif /* __cplusplus */
+
+#define MPACK_DECODE_END(self)                                       \
+    return ((const char *)((self)->pos)) - ((const char *)save_pos); \
+  fail:                                                              \
+    (self)->pos = save_pos;                                          \
+    return -1;                                                       \
+  } while (0)
+
+#define MPACK_DECODE_FAIL(err) \
+  do {                         \
+    errno = (err);             \
+    goto fail;                 \
+  } while (0)
+
+#define MPACK_DECODE_CHECK(expr) \
+  do {                           \
+    if (!(expr)) {               \
+      MPACK_DECODE_FAIL(EAGAIN); \
+    }                            \
+  } while (0)
+
+#define MPACK_DECODE_ASSERT(expr) \
+  do {                            \
+    if ((expr) < 0) {             \
+      goto fail;                  \
+    }                             \
+  } while (0)
 
 enum {
   MPACK_1BIT_MASK = (1 << 7),
@@ -208,5 +247,128 @@ int mpack_encode_object(mpack_encoder_t *encoder, mpack_object_t value);
 
 #ifdef __cplusplus
 }
+
+namespace mpack {
+
+  using format = mpack_format_t;
+  using type = mpack_type_t;
+
+  class extended : public mpack_extended_t {
+  public:
+    constexpr extended() noexcept:
+      mpack_extended_t{ nullptr, 0, 0 }
+    { }
+
+    explicit constexpr extended(const void *data, size_t size, int8_t type) noexcept:
+      mpack_extended_t{ data, size, type }
+    { }
+  };
+
+  class binary : public mpack_binary_t {
+  public:
+    constexpr binary() noexcept:
+      mpack_binary_t{ nullptr, 0 }
+    { }
+
+    explicit constexpr binary(const char *data, size_t size) noexcept:
+      mpack_binary_t{ data, size }
+    { }
+  };
+
+  class string : public mpack_string_t {
+  public:
+    constexpr string() noexcept:
+      mpack_string_t{ nullptr, 0 }
+    { }
+
+    explicit constexpr string(const char *data, size_t size) noexcept:
+      mpack_string_t{ data, size }
+    { }
+  };
+
+  class array : public mpack_array_t {
+  public:
+    constexpr array() noexcept:
+      mpack_array_t{ 0 }
+    { }
+
+    explicit constexpr array(size_t size) noexcept:
+      mpack_array_t{ size }
+    { }
+  };
+
+  class map : public mpack_map_t {
+  public:
+    constexpr map() noexcept:
+      mpack_map_t{ 0 }
+    { }
+
+    explicit constexpr map(size_t size) noexcept:
+      mpack_map_t{ size }
+    { }
+  };
+
+  class decoder : public mpack_decoder_t {
+  public:
+    decoder() noexcept;
+    decoder(const void *data, size_t size) noexcept;
+
+    int decode(std::nullptr_t &) noexcept;
+    int decode(bool &) noexcept;
+    int decode(signed char &) noexcept;
+    int decode(signed short &) noexcept;
+    int decode(signed int &) noexcept;
+    int decode(signed long &) noexcept;
+    int decode(unsigned char &) noexcept;
+    int decode(unsigned short &) noexcept;
+    int decode(unsigned int &) noexcept;
+    int decode(unsigned long &) noexcept;
+    int decode(float &) noexcept;
+    int decode(double &) noexcept;
+    int decode(string &) noexcept;
+    int decode(binary &) noexcept;
+    int decode(array &) noexcept;
+    int decode(map &) noexcept;
+    int decode(extended &) noexcept;
+
+    int decode_nil() noexcept;
+    int decode_true() noexcept;
+    int decode_false() noexcept;
+
+  private:
+    template < typename T > int decode_signed(T &) noexcept;
+    template < typename T > int decode_unsigned(T &) noexcept;
+  };
+
+  class encoder : public mpack_encoder_t {
+  public:
+    encoder() noexcept;
+    encoder(void *data, size_t size) noexcept;
+
+    int encode(std::nullptr_t) noexcept;
+    int encode(bool) noexcept;
+    int encode(signed char) noexcept;
+    int encode(signed short) noexcept;
+    int encode(signed int) noexcept;
+    int encode(signed long) noexcept;
+    int encode(unsigned char) noexcept;
+    int encode(unsigned short) noexcept;
+    int encode(unsigned int) noexcept;
+    int encode(unsigned long) noexcept;
+    int encode(float) noexcept;
+    int encode(double) noexcept;
+    int encode(string) noexcept;
+    int encode(binary) noexcept;
+    int encode(array) noexcept;
+    int encode(map) noexcept;
+    int encode(extended) noexcept;
+
+    int encode_nil() noexcept;
+    int encode_true() noexcept;
+    int encode_false() noexcept;
+  };
+
+}
+
 #endif /* __cplusplus */
 #endif /* MPACK_H */
